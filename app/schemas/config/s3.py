@@ -15,6 +15,19 @@ class S3Settings(BaseModel):
         default="",
         description="Секретный ключ доступа"
     )
+    multipart_threshold: float = Field(
+        default=32 * 1024**2,
+        description="Порог размера файла, при превышении которого включается "
+                    "multipart-загрузка"
+    )
+    multipart_chunksize: float = Field(
+        default=32 * 1024**2,
+        description="Размер одного чанка"
+    )
+    max_concurrency: float = Field(
+        default=4,
+        description="Максимально число параллельных потоков"
+    )
     bucket: str = Field(
         default="mle-20261109-edf4b0c3eba4",
         description="Имя бакета в хранилище"
