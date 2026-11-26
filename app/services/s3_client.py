@@ -18,19 +18,19 @@ class S3Client:
             endpoint_url=config.s3.endpoint,
             aws_access_key_id=config.s3.access_key,
             aws_secret_access_key=config.s3.secret_key,
-            region_name=config.s3.region,
+            region_name=config.s3.region
         )
         self._cfg = TransferConfig(
-            multipart_threshold=config.multipart_threshold,
-            multipart_chunksize=config.multipart_chunksize,
-            max_concurrency=config.max_concurrency,
+            multipart_threshold=config.multipart.threshold,
+            multipart_chunksize=config.multipart.chunk_size,
+            max_concurrency=config.multipart.max_concurrency
         )
+        self._bucket = config.bucket
 
-    def download(self, s3_bucket: str, s3_key: str, local_path: Path) -> None:
+    def download(self, s3_key: str, local_path: Path) -> None:
         """
         Загрузка файла из S3.
 
-        :param s3_bucket: Название бакета.
         :param s3_key: Ключ файла.
         :param local_path: Путь, куда будет сохранен файл.
         :return: None.
@@ -39,5 +39,5 @@ class S3Client:
             return
         local_path.parent.mkdir(parents=True, exist_ok=True)
         self._client.download_file(
-            s3_bucket, s3_key, str(local_path), Config=self._cfg
+            self._bucket, s3_key, str(local_path), Config=self._cfg
         )
