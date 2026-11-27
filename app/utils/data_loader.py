@@ -26,6 +26,11 @@ class DataLoader:
         return local
 
     def load_all_recommendations(self) -> None:
-        for file_name, file_key in self._config.s3.recs.files.items():
+        """
+        Загрузка файлов с рекомендациями из S3.
+
+        :return: None.
+        """
+        for file_name, file_key in self._config.s3.recsys.files.items():
             local_path = self._download_parquet(file_key, file_name)
             self._cache[file_name] = pl.read_parquet(local_path)

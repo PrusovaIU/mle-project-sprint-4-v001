@@ -65,6 +65,7 @@ class RecommendationsFilesSettings(BaseModel):
         return self._files
 
 
+
 class S3Settings(BaseModel):
     """Схема для параметров подключения к S3"""
     endpoint: str = Field(
@@ -91,7 +92,7 @@ class S3Settings(BaseModel):
         default="ru-central1",
         description="Регион размещения хранилища"
     )
-    recs: RecommendationsFilesSettings = Field(
+    recsys: RecommendationsFilesSettings = Field(
         default_factory=RecommendationsFilesSettings,
         description="Ключи для файлов с рекомендациями"
     )
