@@ -8,17 +8,18 @@ from app.schemas.config.s3 import S3Settings
 
 class S3Client:
     """
-    Клиент для взаимодействия с S3
+    Клиент для взаимодействия с S3.
 
     :param config: Параметры подключения к S3.
     """
+
     def __init__(self, config: S3Settings) -> None:
         self._client = boto3.client(
             "s3",
-            endpoint_url=config.s3.endpoint,
-            aws_access_key_id=config.s3.access_key,
-            aws_secret_access_key=config.s3.secret_key,
-            region_name=config.s3.region
+            endpoint_url=config.endpoint,
+            aws_access_key_id=config.access_key,
+            aws_secret_access_key=config.secret_key,
+            region_name=config.region,
         )
         self._cfg = TransferConfig(
             multipart_threshold=config.multipart.threshold,
