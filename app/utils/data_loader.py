@@ -1,12 +1,14 @@
-from app.services.s3_client import S3Client
-from app.schemas.config import Settings
-from typing import Any
 from pathlib import Path
+from typing import Any
+
 import polars as pl
+
+from app.schemas.config import Settings
+from app.services.s3_client import S3Client
 
 
 class DataLoader:
-    """Загрузчик артефактов, необходимые для инференса."""
+    """Загрузчик артефактов, необходимых для инференса."""
 
     def __init__(self, config: Settings) -> None:
         self._config = config
@@ -27,10 +29,19 @@ class DataLoader:
 
     def load_all_recommendations(self) -> None:
         """
-        Загрузка файлов с рекомендациями из S3.
+        Загрузка файлов с рекомендациями из S3 и кэширование.
 
         :return: None.
         """
         for file_name, file_key in self._config.s3.recsys.files.items():
             local_path = self._download_parquet(file_key, file_name)
             self._cache[file_name] = pl.read_parquet(local_path)
+
+    def get(self, file_name: str) -> pl.DataFrame:
+        """Получить загруженный датафрейм по имени файла."""
+        if file_name not in self._cache:
+            raise KeyError(
+                f"Файл {file_name!r} не загружен. "
+                f"Сначала вызовите load_all_recommendations()."
+            )
+        return self._cache[file_name]
