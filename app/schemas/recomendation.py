@@ -1,57 +1,70 @@
-from typing import Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
-class RecommendationRequest(BaseModel):
-    """Схема для запроса рекомендации"""
-    user_id: int = Field(
-        description="Идентификатор пользователя"
-    )
-    history: Optional[list[int]] = Field(
+class HistoryItem(BaseModel):
+    """Один элемент истории прослушиваний пользователя."""
+
+    track_id: int = Field(description="ID трека")
+    listened_at: str | None = Field(
         default=None,
-        description="Список track_id, которые пользователь слушал недавно "
-                    "(для онлайн-части)"
+        description="ISO-строка времени прослушивания",
     )
-    top_k: int = Field(
+
+
+class RecommendationRequest(BaseModel):
+    """Запрос на рекомендации."""
+    user_id: int = Field(description="ID пользователя")
+    history: list[HistoryItem] = Field(
+        default_factory=list,
+        description="Список track_id, которые пользователь слушал недавно "
+                    "(для онлайн-части)",
+    )
+    limit: int = Field(
         default=10,
         ge=1,
         le=100,
-        description="Количество рекомендаций"
+        description="Количество рекомендаций",
     )
-    exclude_track_ids: Optional[list[int]] = Field(
-        default=None,
-        description="Треки, которые нужно исключить "
-                    "(например, уже прослушанные)"
+    alpha: float = Field(
+        default=0.6,
+        ge=0.0,
+        le=1.0,
+        description="Вес офлайн-кандидатов (personal ALS) при смешивании. "
+                    "Вес онлайн (i2i) = 1 - alpha.",
     )
 
 
-class RecommendationItem(BaseModel):
-    """Схема для рекомендуемого трека"""
-    track_id: int = Field(
-        description="ID рекомендуемого трека"
+class RecommendedTrack(BaseModel):
+    """Рекомендованный трек с источниками и итоговым скором."""
+
+    track_id: int
+    final_score: float = Field(description="Итоговый нормализованный скор")
+    als_score: float = Field(
+        default=0.0,
+        description="Скор из personal ALS"
     )
-    score: float = Field(
-        description="Оценка релевантности трека для пользователя"
+    i2i_score: float = Field(
+        default=0.0,
+        description="Скор из i2i (similar)"
     )
-    rank: int = Field(
-        description="Позиция трека в списке рекомендаций (1 - верхняя)"
+    popularity_score: float = Field(
+        default=0.0,
+        description="Нормализованная популярность (top_popular)"
     )
-    source: str = Field(
-        description="Источник: 'offline' | 'online_i2i' | "
-                    "'top_popular' | 'mixed'"
+    sources: list[Literal["als", "i2i", "popular", "offline_ranked"]] = Field(
+        default_factory=list,
+        description="Из каких каналов пришёл трек",
     )
 
 
 class RecommendationResponse(BaseModel):
-    """Схема ответа сервиса с рекомендацией"""
-    user_id: int = Field(
-        description="ID пользователя, для которого предоставлена рекомендация"
-    )
-    recommendations: list[RecommendationItem] = Field(
-        description="Список рекомендуемых треков"
-    )
-    meta: dict = Field(
-        default_factory=dict,
-        description="Дополнительная информация"
-    )
+    """Ответ сервиса."""
 
+    user_id: int
+    is_cold_start: bool = Field(
+        description="True, если у пользователя нет офлайн-профиля "
+                    "и/или истории"
+    )
+    recommendations: list[RecommendedTrack]
