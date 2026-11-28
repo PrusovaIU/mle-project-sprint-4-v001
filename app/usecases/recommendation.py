@@ -1,25 +1,15 @@
 from loguru import logger
 from collections import defaultdict
-from dataclasses import dataclass, field
 from app.utils.data_loader import DataLoader
 from app.schemas.config.s3 import RecommendationsFilesSettings
 from app.utils.similar import build_similar_score_map
-from app.schemas import recomendation as recs_schemas
+from app.schemas import recommendation as recs_schemas
 from typing import Callable
 
 import polars as pl
 
 
-@dataclass
-class _UserOfflineProfile:
-    """Офлайн-профиль пользователя, собранный из рекомендаций."""
-
-    als: dict[int, float] = field(default_factory=dict)
-    i2i: dict[int, float] = field(default_factory=dict)
-    ranked: dict[int, float] = field(default_factory=dict)
-
-
-class RecommendationService:
+class RecommendationUsecase:
     """
     Сервис выдачи рекомендаций.
 
@@ -27,7 +17,6 @@ class RecommendationService:
       * офлайн-кандидатов (personal_als + offline recommendations);
       * онлайн-кандидатов (i2i по свежей истории пользователя);
       * популярность как fallback / добавку для cold-start.
-
 
     :param data_loader: Загрузчик данных.
     :param recsys_settings: Настройки с путями до файлов в S3.
