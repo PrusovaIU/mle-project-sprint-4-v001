@@ -1,5 +1,7 @@
 from loguru import logger
 from collections import defaultdict
+
+from app.schemas.recommendation import SourceName
 from app.utils.data_loader import DataLoader
 from app.schemas.config.s3 import RecommendationsFilesSettings
 from app.utils.similar import build_similar_score_map
@@ -159,7 +161,7 @@ class RecommendationUsecase:
             user_id: int,
             history_ids: list[int],
             history_set: set[int],
-    ) -> dict:
+    ) -> dict[int, dict[str, float]]:
         """
         Формирование словаря кандидатов для пользователя путём объединения
         нескольких источников.
@@ -231,8 +233,8 @@ class RecommendationUsecase:
 
         :param als: Словарь ALS-оценок вида `{track_id: score}`.
 
-        :param ranked: Словарь оценок офлайн-ранжирования вида `
-            {track_id: score}`.
+        :param ranked: Словарь оценок офлайн-ранжирования вида
+            `{track_id: score}`.
 
         :param i2i: Словарь i2i-оценок вида `{track_id: score}`.
 
@@ -262,8 +264,8 @@ class RecommendationUsecase:
         :param limit: Максимальное количество элементов в результирующем
             списке.
 
-        :return: Отсортированный по убыванию `final_score` список рекомендаций,
-            содержащий не более `limit` элементов.
+        :return: Отсортированный по убыванию `final_score` список
+            рекомендаций, содержащий не более `limit` элементов.
         """
         scored.sort(key=lambda x: x.final_score, reverse=True)
         return scored[:limit]
@@ -346,13 +348,19 @@ class RecommendationUsecase:
 
         final = self._combine_scores(als_s, ranked_s, i2i_s, pop_s, alpha)
 
+        normalized_sources: dict[str, float] = {
+            "als": als_s,
+            "offline_ranked": ranked_s,
+            "i2i": i2i_s,
+        }
+
         return recs_schemas.RecommendedTrack(
             track_id=int(track_id),
             final_score=round(float(final), 6),
             als_score=round(float(als_s), 6),
             i2i_score=round(float(i2i_s), 6),
             popularity_score=round(float(pop_s), 6),
-            sources=self._collect_sources(sources, pop_s),
+            sources=self._collect_sources(normalized_sources, pop_s),
         )
 
     @staticmethod
@@ -387,19 +395,28 @@ class RecommendationUsecase:
     def _collect_sources(
             sources: dict[str, float],
             pop_s: float,
-    ) -> list[str]:
+    ) -> list[SourceName]:
         """
-        Формирование списка источников, из которых трек попал в кандидаты.
+        Формирование списка источников, реально внёсших вклад в итоговый скор.
 
-        :param sources: Словарь оценок трека по источникам вида
-            `{source_name: score}`.
+        :param sources: Словарь нормализованных оценок трека по источникам
+            вида `{source_name: score}`.
 
-        :param pop_s: Скор популярности трека; при значении больше 0
-            добавляется источник `"popular"`.
+        :param pop_s: Нормализованный скор популярности трека; при значении
+            больше 0 добавляется источник `"popular"`.
 
         :return: Список названий источников трека.
         """
-        srcs = list(sources.keys())
+        srcs: list[SourceName] = []
+        for name, score in sources.items():
+            if score <= 0:
+                continue
+            if name == "als":
+                srcs.append("als")
+            elif name == "offline_ranked":
+                srcs.append("offline_ranked")
+            elif name == "i2i":
+                srcs.append("i2i")
         if pop_s > 0 and "popular" not in srcs:
             srcs.append("popular")
         return srcs

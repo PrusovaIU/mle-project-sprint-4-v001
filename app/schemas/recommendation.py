@@ -3,6 +3,9 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+SourceName = Literal["als", "i2i", "popular", "offline_ranked"]
+
+
 class HistoryItem(BaseModel):
     """Один элемент истории прослушиваний пользователя."""
 
@@ -53,7 +56,7 @@ class RecommendedTrack(BaseModel):
         default=0.0,
         description="Нормализованная популярность (top_popular)"
     )
-    sources: list[Literal["als", "i2i", "popular", "offline_ranked"]] = Field(
+    sources: list[SourceName] = Field(
         default_factory=list,
         description="Из каких каналов пришёл трек",
     )
