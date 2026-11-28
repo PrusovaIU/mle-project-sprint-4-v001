@@ -73,11 +73,9 @@ class S3Settings(BaseModel):
         description="URL-адрес S3 хранилища"
     )
     access_key: str = Field(
-        default="",
         description="Идентификатор ключа доступа"
     )
     secret_key: str = Field(
-        default="",
         description="Секретный ключ доступа"
     )
     multipart: MultipartSettings = Field(
@@ -85,11 +83,9 @@ class S3Settings(BaseModel):
         description="Параметры multipart-загрузки"
     )
     bucket: str = Field(
-        default="mle-20261109-edf4b0c3eba4",
         description="Имя бакета в хранилище"
     )
     region: str = Field(
-        default="ru-central1",
         description="Регион размещения хранилища"
     )
     recsys: RecommendationsFilesSettings = Field(
