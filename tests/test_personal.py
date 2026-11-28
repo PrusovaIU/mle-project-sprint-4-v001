@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from app.schemas.recommendation import RecommendationRequest
 import pytest
+from app.usecases.recommendation import RecommendationUsecase
 
 
-def test_offline_without_history(usecase):
+def test_offline_without_history(usecase: RecommendationUsecase):
     request = RecommendationRequest(user_id=1, history=[], limit=10)
     response = usecase.recommend(request)
     by_id = {r.track_id: r for r in response}
@@ -36,7 +37,9 @@ def test_offline_without_history(usecase):
     assert all(r.i2i_score == 0.0 for r in response)
 
 
-def test_no_negative_scores_for_partial_channel_coverage(usecase):
+def test_no_negative_scores_for_partial_channel_coverage(
+        usecase: RecommendationUsecase
+):
     response = usecase.recommend(
         RecommendationRequest(user_id=1, history=[], limit=100)
     )
@@ -47,7 +50,9 @@ def test_no_negative_scores_for_partial_channel_coverage(usecase):
         assert 0.0 <= r.popularity_score <= 1.0, r
 
 
-def test_offline_ranking_prefers_higher_offline_score(usecase):
+def test_offline_ranking_prefers_higher_offline_score(
+        usecase: RecommendationUsecase
+):
     request = RecommendationRequest(
         user_id=1, history=[], limit=10, alpha=1.0
     )
