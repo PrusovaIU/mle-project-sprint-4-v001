@@ -5,6 +5,7 @@ import polars as pl
 
 from app.schemas.config import Settings
 from app.services.s3_client import S3Client
+from loguru import logger
 
 
 class DataLoader:
@@ -33,9 +34,11 @@ class DataLoader:
 
         :return: None.
         """
+        logger.info("Загрузка данных...")
         for file_name, file_key in self._config.s3.recsys.files.items():
             local_path = self._download_parquet(file_key, file_name)
             self._cache[file_name] = pl.read_parquet(local_path)
+            logger.success(f"Файл {file_name} загружен")
 
     def get(self, file_name: str) -> pl.DataFrame:
         """Получить загруженный датафрейм по имени файла."""
