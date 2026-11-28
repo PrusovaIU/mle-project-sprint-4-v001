@@ -292,6 +292,18 @@ class RecommendationService:
             base = alpha * offline_signal + (1 - alpha) * i2i_signal
             offline_signal = weighted(als, offline_ranked)
             final = base + POPULARITY_BOOST * popularity (если трек популярен)
+
+        :param pool: Словарь кандидатов вида
+            `{track_id: {source_name: score, ...}}`.
+
+        :param alpha: Вес офлайн-сигнала в формуле итогового скора
+            (в диапазоне от 0 до 1).
+
+        :param exclude: Множество идентификаторов треков, которые нужно
+            исключить из результата.
+
+        :return: Список рекомендаций `RecommendedTrack` с рассчитанными
+            итоговыми скорами.
         """
         normalizers = {
             "als": _minmax([v["als"] for v in pool.values() if "als" in v]),
@@ -319,6 +331,23 @@ class RecommendationService:
     ) -> recs_schemas.RecommendedTrack:
         """
         Подсчет итогового скора для одного трека.
+
+        :param track_id: Идентификатор трека, для которого считается скор.
+
+        :param sources: Словарь исходных оценок трека по источникам вида
+            `{source_name: score}`.
+
+        :param alpha: Вес офлайн-сигнала при объединении оценок
+            (в диапазоне от 0 до 1).
+
+        :param popularity_map: Словарь популярности треков вида
+            `{track_id: popularity_score}`.
+
+        :param normalizers: Словарь функций min-max нормализации по источникам
+            вида `{source_name: normalizer}`.
+
+        :return: RecommendedTrack с итоговым и покомпонентными скорами, а
+            также списком источников.
         """
         als_s = normalizers["als"](sources.get("als", 0.0))
         ranked_s = normalizers["offline_ranked"](
@@ -346,8 +375,20 @@ class RecommendationService:
             alpha: float,
     ) -> float:
         """
-        base = alpha * (0.5*als + 0.5*ranked) + (1-alpha)*i2i
-        final = base + POPULARITY_BOOST * popularity
+        Объединение нормализованных сигналов в единый итоговый скор трека.
+
+        :param als_s: Нормализованная оценка ALS-сигнала.
+
+        :param ranked_s: Нормализованная оценка офлайн-ранжирования.
+
+        :param i2i_s: Нормализованная i2i-оценка.
+
+        :param pop_s: Нормализованная оценка популярности трека.
+
+        :param alpha: Вес офлайн-сигнала при смешивании с i2i
+            (в диапазоне от 0 до 1).
+
+        :return: Итоговый скор трека.
         """
         offline_s = 0.5 * als_s + 0.5 * ranked_s
         base = alpha * offline_s + (1.0 - alpha) * i2i_s
@@ -359,7 +400,15 @@ class RecommendationService:
             pop_s: float,
     ) -> list[str]:
         """
-        Список источников трека; добавление 'popular', если трек популярен.
+        Формирование списка источников, из которых трек попал в кандидаты.
+
+        :param sources: Словарь оценок трека по источникам вида
+            `{source_name: score}`.
+
+        :param pop_s: Скор популярности трека; при значении больше 0
+            добавляется источник `"popular"`.
+
+        :return: Список названий источников трека.
         """
         srcs = list(sources.keys())
         if pop_s > 0 and "popular" not in srcs:
