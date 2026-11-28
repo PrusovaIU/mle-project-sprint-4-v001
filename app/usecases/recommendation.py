@@ -340,10 +340,10 @@ class RecommendationUsecase:
         :return: RecommendedTrack с итоговым и покомпонентными скорами, а
             также списком источников.
         """
-        als_s = normalizers["als"](sources.get("als", 0.0))
-        ranked_s = normalizers["offline_ranked"](
-            sources.get("offline_ranked", 0.0))
-        i2i_s = normalizers["i2i"](sources.get("i2i", 0.0))
+        als_s = self._norm_or_zero(normalizers["als"], sources.get("als"))
+        ranked_s = self._norm_or_zero(
+            normalizers["offline_ranked"], sources.get("offline_ranked"))
+        i2i_s = self._norm_or_zero(normalizers["i2i"], sources.get("i2i"))
         pop_s = popularity_map.get(track_id, 0.0)
 
         final = self._combine_scores(als_s, ranked_s, i2i_s, pop_s, alpha)
@@ -362,6 +362,13 @@ class RecommendationUsecase:
             popularity_score=round(float(pop_s), 6),
             sources=self._collect_sources(normalized_sources, pop_s),
         )
+
+    @staticmethod
+    def _norm_or_zero(
+            normalizer: Callable[[float], float],
+            value: float | None,
+    ) -> float:
+        return 0.0 if value is None else normalizer(value)
 
     @staticmethod
     def _combine_scores(
@@ -434,4 +441,4 @@ def _minmax(values: list[float]):
     if hi <= lo:
         return lambda _x: 0.0
     span = hi - lo
-    return lambda x: (float(x) - lo) / span
+    return lambda x: max(0.0, min(1.0, (float(x) - lo) / span))

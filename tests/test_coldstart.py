@@ -8,7 +8,7 @@ from app.usecases.recommendation import RecommendationUsecase
 import pytest
 
 
-def test_cold_start_returns_popular_only(usecase: RecommendationUsecase):
+def test_returns_popular_only(usecase: RecommendationUsecase):
     request = RecommendationRequest(user_id=999, history=[], limit=10)
 
     response = usecase.recommend(request)
@@ -25,7 +25,9 @@ def test_cold_start_returns_popular_only(usecase: RecommendationUsecase):
         assert r.popularity_score > 0
 
 
-def test_cold_start_with_history_uses_i2i_but_no_offline(usecase):
+def test_with_history_uses_i2i_but_no_offline(
+        usecase: RecommendationUsecase
+):
     request = RecommendationRequest(
         user_id=999,
         history=[HistoryItem(track_id=500)],
